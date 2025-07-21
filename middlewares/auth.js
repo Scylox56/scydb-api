@@ -10,7 +10,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     token = req.cookies.jwt;
   }
 
-  if (!token) {
+  if (!token || token === 'loggedout') {
     return next(new AppError('You are not logged in!', 401));
   }
 

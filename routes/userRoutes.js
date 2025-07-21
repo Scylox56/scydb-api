@@ -4,21 +4,23 @@ const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 
 // does not require login(auth)
-router.post('/signup', authController.signup); 
+router.post('/signup', authController.signup);
+router.post('/login', authController.login);
+router.get('/logout', authController.logout);
+router.get('/check-auth', authController.checkAuth);
 
-// requires login
 router.use(authController.protect);
 
-router.get('/me', userController.getMe);
+router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
+router.patch('/updateMyPassword', authController.updatePassword);
 router.delete('/deleteMe', userController.deleteMe);
 
-// watchlist routes
 router.post('/watchlist/:movieId', userController.addToWatchlist);
 router.delete('/watchlist/:movieId', userController.removeFromWatchlist);
 
-// admin-only routes
 router.use(authController.restrictTo('admin', 'super-admin'));
+
 router.get('/', userController.getAllUsers);
 router
   .route('/:id')

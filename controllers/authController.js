@@ -3,13 +3,13 @@ const User = require('../models/User');
 const AppError = require('../utils/appError');
 const { signToken, catchAsync } = require('../utils/utils');
 
-// Token sender (keep this in controller since it's auth-specific)
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const cookieOptions = {
     expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
   };
 
   res.cookie('jwt', token, cookieOptions);
@@ -22,14 +22,13 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
-// Auth Handlers
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    role: req.body.role || 'client'
+    role: req.body.role || 'user' 
   });
   createSendToken(newUser, 201, res);
 });
@@ -49,8 +48,19 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Logged out successfully'
+  });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Get token
   let token;
   if (req.headers.authorization?.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
@@ -58,23 +68,53 @@ exports.protect = catchAsync(async (req, res, next) => {
     token = req.cookies.jwt;
   }
 
-  if (!token) return next(new AppError('You are not logged in!', 401));
+  if (!token || token === 'loggedout') {
+    return next(new AppError('You are not logged in!', 401));
+  }
 
-  // 2) Verify token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-  // 3) Check if user exists
+  const decoded = await jwt.verify(token, process.env.JWT_SECRET);
   const currentUser = await User.findById(decoded.id);
-  if (!currentUser) return next(new AppError('User no longer exists', 401));
+  if (!currentUser) {
+    return next(new AppError('The user belonging to this token no longer exists.', 401));
+  }
 
-  // 4) Grant access
+  // Check if user changed password after the token was issued
+  if (currentUser.changedPasswordAfter(decoded.iat)) {
+    return next(new AppError('User recently changed password! Please log in again.', 401));
+  }
+
   req.user = currentUser;
   next();
 });
 
-exports.restrictTo = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
-    return next(new AppError('You do not have permission!', 403));
-  }
-  next();
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('You do not have permission to perform this action', 403));
+    }
+    next();
+  };
 };
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('+password');
+
+  if (!(await user.correctPassword(req.body.currentPassword, user.password))) {
+    return next(new AppError('Your current password is wrong.', 401));
+  }
+
+  user.password = req.body.newPassword;
+  user.passwordConfirm = req.body.newPasswordConfirm;
+  await user.save();
+
+  createSendToken(user, 200, res);
+});
+
+exports.checkAuth = catchAsync(async (req, res, next) => {
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: req.user
+    }
+  });
+});
