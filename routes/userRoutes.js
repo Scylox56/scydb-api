@@ -13,3 +13,8 @@ router.get('/me', userController.getMe);
 router.patch('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
 
+// watchlist routes
+router.post('/watchlist/:movieId', userController.addToWatchlist);
+router.delete('/watchlist/:movieId', userController.removeFromWatchlist);
+
+
