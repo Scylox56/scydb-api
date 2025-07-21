@@ -3,3 +3,13 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 
+// does not require login(auth)
+router.post('/signup', authController.signup); 
+
+// requires login
+router.use(authController.protect);
+
+router.get('/me', userController.getMe);
+router.patch('/updateMe', userController.updateMe);
+router.delete('/deleteMe', userController.deleteMe);
+
