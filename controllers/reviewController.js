@@ -1,0 +1,60 @@
+const Review = require('../models/Review');
+const AppError = require('../utils/appError');
+const { catchAsync } = require('../utils/utils');
+
+exports.getAllReviews = catchAsync(async (req, res, next) => {
+  const reviews = await Review.find({ movie: req.params.movieId })
+    .select('-__v')
+    .populate({
+      path: 'user',
+      select: 'name photo -_id'
+    });
+
+  res.status(200).json({
+    status: 'success',
+    results: reviews.length,
+    data: { reviews }
+  });
+});
+
+exports.createReview = catchAsync(async (req, res, next) => {
+  if (!req.user) {
+    return next(new AppError('You must be logged in to review', 401));
+  }
+
+  const newReview = await Review.create({
+    review: req.body.review,
+    rating: req.body.rating,
+    movie: req.params.movieId,
+    user: req.user.id
+  });
+
+  // Remove version key from response
+  newReview.__v = undefined;
+
+  res.status(201).json({
+    status: 'success',
+    data: { review: newReview }
+  });
+});
+
+exports.deleteReview = catchAsync(async (req, res, next) => {
+  const review = await Review.findById(req.params.id);
+
+  if (!review) {
+    return next(new AppError('No review found with that ID', 404));
+  }
+
+  // Check if user owns review or is admin/super-admin
+  if (review.user.toString() !== req.user.id && 
+      !['admin', 'super-admin'].includes(req.user.role)) {
+    return next(new AppError('You can only delete your own reviews', 403));
+  }
+
+  await Review.findByIdAndDelete(req.params.id);
+
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
+});
