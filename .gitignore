@@ -49,3 +49,4 @@ public
 .nuxt
 tmp/
 temp/
+test-setup.js

@@ -45,17 +45,18 @@ const userSchema = new mongoose.Schema({
     ref: 'Movie'
   }],
   active: {
-    type: Boolean,
-    default: true,
-    select: false
-   }
-  }, {
+  type: Boolean,
+  default: true,
+  select: false
+},
+passwordChangedAt: Date
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// pass hashing middleware
+
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
@@ -63,9 +64,26 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// compare passwords
+userSchema.pre('save', function(next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000; 
+  next();
+});
+
+// Compare entered password with hashed one
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+// Check if user changed password after token issued
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    return JWTTimestamp < changedTimestamp;
+  }
+
+  return false; // its not chanegd
 };
 
 const User = mongoose.model('User', userSchema);

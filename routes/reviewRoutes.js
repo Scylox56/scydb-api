@@ -8,7 +8,7 @@ router.use(authController.protect);
 router
   .route('/')
   .get(reviewController.getAllReviews)
-  .post(authController.restrictTo('client'), reviewController.createReview);
+  .post(authController.restrictTo('client', 'admin', 'super-admin'), reviewController.createReview);
 
 
 router

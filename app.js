@@ -2,8 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
 const hpp = require('hpp');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
@@ -19,8 +17,6 @@ app.use(cors({
    credentials: true
 }));
 app.use(helmet());
-app.use(mongoSanitize());
-app.use(xss());
 app.use(hpp());
 app.use(limiter);
 app.use(express.json({ limit: '10kb' }));
@@ -34,7 +30,6 @@ if (process.env.NODE_ENV === 'development') {
 // Routes
 app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/movies', require('./routes/movieRoutes'));
-app.use('/api/v1/reviews', require('./routes/reviewRoutes'));
 app.use('/api/v1/users', require('./routes/userRoutes'));
 
 // Error handling middleware

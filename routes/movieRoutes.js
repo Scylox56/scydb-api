@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const movieController = require('../controllers/movieController');
 const authController = require('../controllers/authController');
+const reviewRouter = require('./reviewRoutes');
+
+router.use('/:movieId/reviews', reviewRouter);
+
 
 router
   .route('/')

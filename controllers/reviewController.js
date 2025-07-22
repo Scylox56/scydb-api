@@ -22,20 +22,27 @@ exports.createReview = catchAsync(async (req, res, next) => {
     return next(new AppError('You must be logged in to review', 401));
   }
 
-  const newReview = await Review.create({
-    review: req.body.review,
-    rating: req.body.rating,
-    movie: req.params.movieId,
-    user: req.user.id
-  });
+  try {
+    const newReview = await Review.create({
+      review: req.body.review,
+      rating: req.body.rating,
+      movie: req.params.movieId,
+      user: req.user.id
+    });
 
-  // Remove version key from response
-  newReview.__v = undefined;
+    newReview.__v = undefined;
 
-  res.status(201).json({
-    status: 'success',
-    data: { review: newReview }
-  });
+    res.status(201).json({
+      status: 'success',
+      data: { review: newReview }
+    });
+
+  } catch (err) {
+    if (err.code === 11000) {
+      return next(new AppError('You have already reviewed this movie', 400));
+    }
+    return next(err);
+  }
 });
 
 exports.deleteReview = catchAsync(async (req, res, next) => {
