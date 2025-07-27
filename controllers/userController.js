@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Role = require('../models/Role');
 const AppError = require('../utils/appError');
 const { catchAsync, filterObj } = require('../utils/utils');
 
@@ -61,8 +62,18 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 exports.updateUser = catchAsync(async (req, res, next) => {
   const filteredBody = filterObj(req.body, 'name', 'email', 'photo', 'role');
   
+  // Check if trying to update role
   if (req.body.role && req.user.role !== 'super-admin') {
     return next(new AppError('Only super-admins can modify roles', 403));
+  }
+
+  // Validate role exists if being updated
+  if (req.body.role) {
+    const roleExists = await Role.findOne({ name: req.body.role.toLowerCase() });
+    if (!roleExists) {
+      return next(new AppError('Invalid role specified', 400));
+    }
+    filteredBody.role = req.body.role.toLowerCase();
   }
 
   const updatedUser = await User.findByIdAndUpdate(
@@ -70,6 +81,10 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     filteredBody,
     { new: true, runValidators: true }
   ).select('-__v -password');
+
+  if (!updatedUser) {
+    return next(new AppError('No user found with that ID', 404));
+  }
 
   res.status(200).json({
     status: 'success',
@@ -82,7 +97,11 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
     return next(new AppError('Only super-admins can delete users', 403));
   }
 
-  await User.findByIdAndDelete(req.params.id);
+  const user = await User.findByIdAndDelete(req.params.id);
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
 
   res.status(204).json({
     status: 'success',
@@ -116,26 +135,48 @@ exports.removeFromWatchlist = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.toggleRole = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+// New method to get user statistics
+exports.getUserStats = catchAsync(async (req, res, next) => {
+  const stats = await User.aggregate([
+    {
+      $group: {
+        _id: '$role',
+        count: { $sum: 1 },
+        activeUsers: {
+          $sum: { $cond: [{ $eq: ['$active', true] }, 1, 0] }
+        }
+      }
+    },
+    {
+      $sort: { count: -1 }
+    }
+  ]);
 
-  if (!user) {
-    return next(new AppError('No user found with that ID', 404));
-  }
-
-  if (user.role === 'super-admin') {
-    return next(new AppError('Cannot change role of a super-admin', 403));
-  }
-
-  if (req.user.role !== 'super-admin') {
-    return next(new AppError('Only super-admins can change user roles', 403));
-  }
-
-  user.role = user.role === 'client' ? 'admin' : 'client';
-  await user.save({ validateBeforeSave: false });
+  const totalUsers = await User.countDocuments();
+  const activeUsers = await User.countDocuments({ active: true });
 
   res.status(200).json({
     status: 'success',
-    data: { user }
+    data: {
+      stats,
+      summary: {
+        total: totalUsers,
+        active: activeUsers,
+        inactive: totalUsers - activeUsers
+      }
+    }
+  });
+});
+
+// Method to get available roles for dropdown
+exports.getAvailableRoles = catchAsync(async (req, res, next) => {
+  const roles = await Role.find({ isActive: { $ne: false } })
+    .select('name description -_id')
+    .sort('name');
+
+  res.status(200).json({
+    status: 'success',
+    results: roles.length,
+    data: { roles }
   });
 });

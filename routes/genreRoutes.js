@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const genreController = require('../controllers/genreController');
 const authController = require('../controllers/authController');
+const { validateGenre, validateBulkGenres } = require('../middlewares/validation');
 
 // Public route - no authentication required
 router.get('/active', genreController.getActiveGenres);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const roleController = require('../controllers/roleController');
 const authController = require('../controllers/authController');
+const { validateRole } = require('../middlewares/validation');
 
 // Protect all routes - require authentication
 router.use(authController.protect);
@@ -14,10 +15,10 @@ router.get('/:id', roleController.getRole);
 // Restrict to super-admin only for CUD operations
 router.use(authController.restrictTo('super-admin'));
 
-router.post('/', roleController.createRole);
+router.post('/', validateRole, roleController.createRole);
 router
   .route('/:id')
-  .patch(roleController.updateRole)
+  .patch(validateRole, roleController.updateRole)
   .delete(roleController.deleteRole);
 
 module.exports = router;
