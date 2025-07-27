@@ -19,17 +19,13 @@ router.delete('/deleteMe', userController.deleteMe);
 router.post('/watchlist/:movieId', userController.addToWatchlist);
 router.delete('/watchlist/:movieId', userController.removeFromWatchlist);
 
-router.patch(
-  '/:id/role',
-  authController.protect,
-  authController.restrictTo('super-admin'),
-  userController.toggleRole
-);
-
+// Available for admins to get roles for dropdowns
+router.get('/available-roles', authController.restrictTo('admin', 'super-admin'), userController.getAvailableRoles);
 
 router.use(authController.restrictTo('admin', 'super-admin'));
 
 router.get('/', userController.getAllUsers);
+router.get('/stats', userController.getUserStats);
 router
   .route('/:id')
   .get(userController.getUser)
