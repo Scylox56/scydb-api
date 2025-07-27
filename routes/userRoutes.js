@@ -19,6 +19,14 @@ router.delete('/deleteMe', userController.deleteMe);
 router.post('/watchlist/:movieId', userController.addToWatchlist);
 router.delete('/watchlist/:movieId', userController.removeFromWatchlist);
 
+router.patch(
+  '/:id/role',
+  authController.protect,
+  authController.restrictTo('super-admin'),
+  userController.toggleRole
+);
+
+
 router.use(authController.restrictTo('admin', 'super-admin'));
 
 router.get('/', userController.getAllUsers);

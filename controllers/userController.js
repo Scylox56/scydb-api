@@ -115,3 +115,27 @@ exports.removeFromWatchlist = catchAsync(async (req, res, next) => {
     data: { user }
   });
 });
+
+exports.toggleRole = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  if (user.role === 'super-admin') {
+    return next(new AppError('Cannot change role of a super-admin', 403));
+  }
+
+  if (req.user.role !== 'super-admin') {
+    return next(new AppError('Only super-admins can change user roles', 403));
+  }
+
+  user.role = user.role === 'client' ? 'admin' : 'client';
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    status: 'success',
+    data: { user }
+  });
+});

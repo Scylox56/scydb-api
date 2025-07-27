@@ -1,9 +1,20 @@
 const rateLimit = require('express-rate-limit');
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // equals 15 minutes or like 900k ms
-    max: 100, // limit each ip to 100 req per window
-    message: 'Too many requests from this IP, please try again later.', 
+// More permissive limiter for authentication routes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per 15 minutes for auth routes
+    message: 'Too many login attempts, please try again later.',
 });
 
-module.exports = limiter;
+// Standard limiter for other routes
+const standardLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // 200 requests per 15 minutes
+    message: 'Too many requests from this IP, please try again later.',
+});
+
+module.exports = {
+    authLimiter,
+    standardLimiter
+};
