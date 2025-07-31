@@ -180,3 +180,35 @@ exports.getAvailableRoles = catchAsync(async (req, res, next) => {
     data: { roles }
   });
 });
+
+exports.toggleUserRole = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  if (user.role === 'super-admin') {
+    return next(new AppError('Cannot modify super admin roles', 403));
+  }
+
+  if (user._id.toString() === req.user.id) {
+    return next(new AppError('You cannot change your own role', 403));
+  }
+
+  const newRole = user.role === 'client' ? 'admin' : 'client';
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.params.id,
+    { role: newRole },
+    { new: true, runValidators: true }
+  ).select('-__v -password');
+
+  res.status(200).json({
+    status: 'success',
+    data: { 
+      user: updatedUser,
+      message: `User role changed from ${user.role} to ${newRole}`
+    }
+  });
+});

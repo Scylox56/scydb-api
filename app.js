@@ -37,6 +37,7 @@ app.use('/api/v1/movies', standardLimiter, require('./routes/movieRoutes'));
 app.use('/api/v1/users', standardLimiter, require('./routes/userRoutes'));
 app.use('/api/v1/roles', require('./routes/roleRoutes'));
 app.use('/api/v1/genres', require('./routes/genreRoutes'));
+app.use('/api/v1/reviews', require('./routes/reviewRoutes'));
 
 
 // Error handling middleware

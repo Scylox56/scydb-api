@@ -112,27 +112,27 @@ exports.deleteRole = catchAsync(async (req, res, next) => {
 
 // Get role statistics
 exports.getRoleStats = catchAsync(async (req, res, next) => {
-  const stats = await Role.aggregate([
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'name',
-        foreignField: 'role',
-        as: 'users'
-      }
-    },
-    {
-      $project: {
-        name: 1,
-        description: 1,
-        permissions: 1,
-        userCount: { $size: '$users' }
-      }
-    },
-    {
-      $sort: { userCount: -1 }
-    }
-  ]);
+  const roles = await Role.find().select('-__v');
+  const allUsers = await User.find().select('role');
+  
+  console.log('Roles in database:', roles.map(r => r.name));
+  console.log('User roles in database:', allUsers.map(u => u.role));
+  
+  const statsPromises = roles.map(async (role) => {
+    const userCount = await User.countDocuments({ role: role.name });
+    console.log(`Role "${role.name}" has ${userCount} users`);
+    
+    return {
+      _id: role._id,
+      name: role.name,
+      description: role.description,
+      permissions: role.permissions,
+      userCount: userCount
+    };
+  });
+  
+  const stats = await Promise.all(statsPromises);
+  stats.sort((a, b) => b.userCount - a.userCount);
 
   res.status(200).json({
     status: 'success',

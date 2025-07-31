@@ -46,7 +46,17 @@ exports.createReview = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllAdminReviews = catchAsync(async (req, res, next) => {
-  const reviews = await Review.find().select('-__v');
+  const reviews = await Review.find()
+    .select('-__v')
+    .populate({
+      path: 'user',
+      select: 'name photo'
+    })
+    .populate({
+      path: 'movie',
+      select: 'title poster'
+    })
+    .sort('-createdAt');
 
   res.status(200).json({
     status: 'success',
@@ -85,9 +95,7 @@ exports.updateReview = catchAsync(async (req, res, next) => {
     return next(new AppError('No review found with that ID', 404));
   }
 
-  // Check if user owns review or is admin/super-admin
-  if (review.user.toString() !== req.user.id && 
-      !['admin', 'super-admin'].includes(req.user.role)) {
+  if (review.user.toString() !== req.user.id) {
     return next(new AppError('You can only edit your own reviews', 403));
   }
 

@@ -38,6 +38,9 @@ reviewSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'user',
     select: 'name photo'
+  }).populate({
+    path: 'movie',
+    select: 'title poster'
   });
   next();
 });

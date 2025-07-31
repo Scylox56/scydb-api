@@ -32,4 +32,6 @@ router
   .patch(userController.updateUser)
   .delete(userController.deleteUser);
 
+router.patch('/:id/role', authController.restrictTo('super-admin'), userController.toggleUserRole);
+
 module.exports = router;
