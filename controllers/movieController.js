@@ -4,39 +4,37 @@ const { catchAsync } = require('../utils/utils');
 const APIFeatures = require('../utils/APIFeatures');
 
 exports.getAllMovies = catchAsync(async (req, res, next) => {
-  // Build search query
-  let query = Movie.find();
+  // Build base filter object
+  let filterConditions = {};
   
   // Handle search parameter
   if (req.query.search) {
     const searchRegex = new RegExp(req.query.search, 'i');
-    query = query.find({
-      $or: [
-        { title: searchRegex },
-        { director: searchRegex },
-        { cast: { $in: [searchRegex] } },
-        { description: searchRegex },
-        { genre: { $in: [searchRegex] } }
-      ]
-    });
+    filterConditions.$or = [
+      { title: searchRegex },
+      { director: searchRegex },
+      { cast: { $in: [searchRegex] } },
+      { description: searchRegex },
+      { genre: { $in: [searchRegex] } }
+    ];
   }
   
   // Handle genre filter
   if (req.query.genre) {
-    query = query.find({ genre: { $in: [req.query.genre] } });
+    filterConditions.genre = { $in: [req.query.genre] };
   }
   
   // Handle director filter
   if (req.query.director) {
     const directorRegex = new RegExp(req.query.director, 'i');
-    query = query.find({ director: directorRegex });
+    filterConditions.director = directorRegex;
   }
   
   // Handle cast filter
   if (req.query.cast) {
     const castArray = req.query.cast.split(',').map(actor => actor.trim());
     const castRegexArray = castArray.map(actor => new RegExp(actor, 'i'));
-    query = query.find({ cast: { $in: castRegexArray } });
+    filterConditions.cast = { $in: castRegexArray };
   }
   
   // Handle year range filters
@@ -44,40 +42,27 @@ exports.getAllMovies = catchAsync(async (req, res, next) => {
     const yearFilter = {};
     if (req.query.yearFrom) yearFilter.$gte = parseInt(req.query.yearFrom);
     if (req.query.yearTo) yearFilter.$lte = parseInt(req.query.yearTo);
-    query = query.find({ year: yearFilter });
+    filterConditions.year = yearFilter;
   }
   
   // Handle duration filter
   if (req.query.duration) {
     const durationRange = req.query.duration;
     if (durationRange === '0-90') {
-      query = query.find({ duration: { $lt: 90 } });
+      filterConditions.duration = { $lt: 90 };
     } else if (durationRange === '90-120') {
-      query = query.find({ duration: { $gte: 90, $lte: 120 } });
+      filterConditions.duration = { $gte: 90, $lte: 120 };
     } else if (durationRange === '120-180') {
-      query = query.find({ duration: { $gte: 120, $lte: 180 } });
+      filterConditions.duration = { $gte: 120, $lte: 180 };
     } else if (durationRange === '180-') {
-      query = query.find({ duration: { $gt: 180 } });
+      filterConditions.duration = { $gt: 180 };
     }
   }
   
-  // Handle sorting
-  if (req.query.sort) {
-    let sortBy = req.query.sort;
-    if (sortBy === 'popular') {
-      sortBy = '-createdAt';
-    } else if (sortBy === 'rating') {
-      sortBy = '-createdAt';
-    } else if (sortBy === 'newest') {
-      sortBy = '-year';
-    } else if (sortBy === 'oldest') {
-      sortBy = 'year';
-    } else if (sortBy === 'title') {
-      sortBy = 'title';
-    }
-    query = query.sort(sortBy);
-  } else {
-    query = query.sort('-createdAt');
+  // Handle rating filter
+  if (req.query.minRating) {
+    // This requires aggregation since averageRating is a virtual field
+    // For now, we'll handle this in the frontend or add it as a real field
   }
   
   // Handle pagination
@@ -85,18 +70,62 @@ exports.getAllMovies = catchAsync(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
   
-  query = query.skip(skip).limit(limit);
+  // Get total count with the same filters
+  const totalResults = await Movie.countDocuments(filterConditions);
   
-  // Execute query
-  const movies = await query.populate({
-    path: 'reviews',
-    select: '-__v -createdAt'
-  }).select('-__v');
+  // Handle sorting
+  let sortBy = '-createdAt'; // default
+  if (req.query.sort) {
+    if (req.query.sort === 'popular') {
+      sortBy = '-createdAt';
+    } else if (req.query.sort === 'rating') {
+      sortBy = '-averageRating'; // Note: this might need aggregation for virtual fields
+    } else if (req.query.sort === 'newest') {
+      sortBy = '-year';
+    } else if (req.query.sort === 'oldest') {
+      sortBy = 'year';
+    } else if (req.query.sort === 'title') {
+      sortBy = 'title';
+    } else {
+      sortBy = req.query.sort; // Allow direct sort strings like '-createdAt'
+    }
+  }
+  
+  // Build and execute query
+  const movies = await Movie.find(filterConditions)
+    .sort(sortBy)
+    .skip(skip)
+    .limit(limit)
+    .populate({
+      path: 'reviews',
+      select: '-__v -createdAt'
+    })
+    .select('-__v');
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalResults / limit);
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
 
   res.status(200).json({
     status: 'success',
     results: movies.length,
-    data: { movies }
+    data: { 
+      movies,
+      totalResults,
+      totalPages,
+      currentPage: page,
+      hasNextPage,
+      hasPrevPage,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalResults,
+        hasNextPage,
+        hasPrevPage
+      }
+    }
   });
 });
 

@@ -88,6 +88,22 @@ exports.deleteReview = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getMyReviews = catchAsync(async (req, res, next) => {
+  const reviews = await Review.find({ user: req.user.id })
+    .select('-__v')
+    .populate({
+      path: 'movie',
+      select: 'title poster'
+    })
+    .sort('-createdAt');
+
+  res.status(200).json({
+    status: 'success',
+    results: reviews.length,
+    data: { reviews }
+  });
+});
+
 exports.updateReview = catchAsync(async (req, res, next) => {
   const review = await Review.findById(req.params.id);
 

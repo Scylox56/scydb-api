@@ -10,6 +10,13 @@ router.get(
   reviewController.getAllAdminReviews
 );
 
+router.get(
+  '/my',
+  authController.protect,
+  reviewController.getMyReviews
+);
+
+
 router.use(authController.protect);
 
 router

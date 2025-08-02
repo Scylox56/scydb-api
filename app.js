@@ -39,7 +39,6 @@ app.use('/api/v1/roles', require('./routes/roleRoutes'));
 app.use('/api/v1/genres', require('./routes/genreRoutes'));
 app.use('/api/v1/reviews', require('./routes/reviewRoutes'));
 
-
 // Error handling middleware
 app.use(errorHandler);
 
