@@ -226,7 +226,7 @@ npm test               # Run tests (placeholder)
 5. Open a Pull Request
 
 ## 📝 License
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
 
 👨‍💻 Author
 Created with ❤️ by [Scylox56]
