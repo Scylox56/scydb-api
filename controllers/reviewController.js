@@ -111,7 +111,15 @@ exports.updateReview = catchAsync(async (req, res, next) => {
     return next(new AppError('No review found with that ID', 404));
   }
 
-  if (review.user.toString() !== req.user.id) {
+  // Get the actual user ID from the review
+  const reviewUserId = review.user._id ? review.user._id.toString() : review.user.toString();
+  const currentUserId = req.user._id ? req.user._id.toString() : req.user.id;
+  
+  console.log('Review user ID:', reviewUserId);
+  console.log('Current user ID:', currentUserId);
+  console.log('Are they equal?', reviewUserId === currentUserId);
+
+  if (reviewUserId !== currentUserId) {
     return next(new AppError('You can only edit your own reviews', 403));
   }
 
@@ -127,7 +135,7 @@ exports.updateReview = catchAsync(async (req, res, next) => {
     }
   ).populate({
     path: 'user',
-    select: 'name photo -_id'
+    select: 'name photo'
   });
 
   res.status(200).json({
