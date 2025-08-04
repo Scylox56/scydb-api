@@ -232,7 +232,7 @@ This project is licensed under the MIT License.
 Created with ❤️ by [Scylox56]
 
 🔗 Links
-[Live Demo](https://your-link-here.com)
+[Live Demo](https://scydb.netlify.app/)
 
 ---
 
