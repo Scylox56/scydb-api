@@ -26,6 +26,9 @@ A comprehensive movie database API built with Node.js, Express, and MongoDB. Scy
 - **Validation**: Custom middleware validation
 - **Development**: Nodemon for hot reloading
 
+## 🔗 Related Repositories
+- [scydb-website](https://github.com/Scylox56/scydb-website) – The frontend client built with HTML, CSS, and JavaScript
+
 ## 📦 Installation
 
 1. **Clone the repository**
