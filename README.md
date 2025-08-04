@@ -228,7 +228,7 @@ npm test               # Run tests (placeholder)
 ## 📝 License
 This project is licensed under the MIT License.
 
-👨‍💻 Author
+## 👨‍💻 Author
 Created with ❤️ by [Scylox56]
 
 🔗 Links
