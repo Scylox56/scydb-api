@@ -25,31 +25,41 @@ const sendEmail = async (options) => {
   await transporter.sendMail(mailOptions);
 };
 
-// NEW: Send verification email
+// Send verification email
 const sendVerificationEmail = async (user, verificationToken) => {
-const verificationURL = `${process.env.FRONTEND_URL}/pages/auth/verify-link.html?token=${verificationToken}`;
+  const verificationURL = `${process.env.FRONTEND_URL}/pages/auth/verify-link.html?token=${verificationToken}`;
   
   const message = `Welcome to ScyDB! Please verify your email address by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`;
-  
+
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Welcome to ScyDB!</h2>
-      <p>Thank you for signing up. Please verify your email address to complete your registration.</p>
-      
-      <div style="margin: 30px 0; text-align: center;">
+    <div style="background-color:#F2F0E3; padding:40px 20px; font-family: Arial, sans-serif; color:#2E2E2E; text-align:center;">
+      <div style="max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:12px; padding:30px; box-shadow:0 4px 20px rgba(0,0,0,0.05);">
+        
+        <h1 style="color:#F76F53; margin-bottom:10px; font-size:28px;">Welcome to ScyDB!</h1>
+        <p style="font-size:16px; color:#555; margin-bottom:30px;">
+          Thanks for signing up, <strong>${user.name}</strong>!  
+          Please verify your email address to start exploring movies.
+        </p>
+
         <a href="${verificationURL}" 
-           style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Verify Email Address
+           style="background-color:#F76F53; color:#FFFFFF; padding:14px 30px; border-radius:8px; text-decoration:none; font-size:16px; font-weight:bold; display:inline-block; margin-bottom:25px;">
+          Verify Email
         </a>
+
+        <p style="font-size:14px; color:#777; margin-bottom:5px;">Or copy and paste this link into your browser:</p>
+        <p style="word-break:break-all; font-size:14px; color:#F76F53; margin-bottom:30px;">
+          ${verificationURL}
+        </p>
+
+        <p style="font-size:12px; color:#999;">
+          This link will expire in 24 hours.  
+          If you didn’t create an account, you can safely ignore this email.
+        </p>
       </div>
-      
-      <p>Or copy and paste this link into your browser:</p>
-      <p style="word-break: break-all; color: #666;">${verificationURL}</p>
-      
-      <p style="color: #666; font-size: 14px;">
-        This link will expire in 24 hours.<br>
-        If you didn't create an account, please ignore this email.
-      </p>
+
+      <div style="margin-top:30px; font-size:12px; color:#aaa;">
+        &copy; ${new Date().getFullYear()} ScyDB. All rights reserved.
+      </div>
     </div>
   `;
 
@@ -60,5 +70,6 @@ const verificationURL = `${process.env.FRONTEND_URL}/pages/auth/verify-link.html
     html
   });
 };
+
 
 module.exports = { sendEmail, sendVerificationEmail };
