@@ -10,8 +10,8 @@ const createSendToken = (user, statusCode, res, redirectUrl) => {
   const cookieOptions = {
     expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: false, // set to true in production with HTTPS
-    sameSite: 'lax'
+    secure: process.env.NODE_ENV === 'production', // must be true on https
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // allow cross-site cookies
   };
 
   res.cookie('jwt', token, cookieOptions);
@@ -93,16 +93,14 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   user.emailVerificationExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
-  // Log in and redirect to success page
-  createSendToken(
-    user,
-    200,
-    res,
-    `${process.env.FRONTEND_URL}/pages/auth/email-verified.html`
-  );
+  const token = signToken(user._id);
+
+  res.status(200).json({
+    status: 'success',
+    token,
+    data: { user }
+  });
 });
-
-
 
 // Resend verification email
 exports.resendVerification = catchAsync(async (req, res, next) => {
