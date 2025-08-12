@@ -5,24 +5,31 @@ const AppError = require('../utils/appError');
 const { signToken, catchAsync } = require('../utils/utils');
 const { sendVerificationEmail } = require('../utils/email');
 
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode, res, redirectUrl) => {
   const token = signToken(user._id);
   const cookieOptions = {
     expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: false, // for local dev
+    secure: false, // set to true in production with HTTPS
     sameSite: 'lax'
   };
 
   res.cookie('jwt', token, cookieOptions);
   user.password = undefined;
 
+  // If redirect URL is provided, redirect instead of sending JSON
+  if (redirectUrl) {
+    return res.redirect(redirectUrl);
+  }
+
+  // if not send JSON response
   res.status(statusCode).json({
     status: 'success',
     token,
     data: { user }
   });
 };
+
 
 exports.signup = catchAsync(async (req, res, next) => {
   // Create user but don't log them in yet
@@ -86,12 +93,15 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   user.emailVerificationExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
-  // Log them in (sets JWT cookie)
-  createSendToken(user, 200, res);
-
-  // Redirect to the email-verified page instead of showing JSON
-  return res.redirect(`${process.env.FRONTEND_URL}/pages/auth/email-verified.html`);
+  // Log in and redirect to success page
+  createSendToken(
+    user,
+    200,
+    res,
+    `${process.env.FRONTEND_URL}/pages/auth/email-verified.html`
+  );
 });
+
 
 
 // Resend verification email
