@@ -67,13 +67,11 @@ exports.signup = catchAsync(async (req, res, next) => {
 
 // Email verification handler
 exports.verifyEmail = catchAsync(async (req, res, next) => {
-  // Hash token from URL
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
 
-  // Find matching user whose token is still valid
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
     emailVerificationExpires: { $gt: Date.now() }
@@ -83,18 +81,18 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
     return next(new AppError('Verification token is invalid or has expired', 400));
   }
 
-  // Mark as verified and clear token fields
   user.isEmailVerified = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
-  // Log them in
+  // Log them in (sets JWT cookie)
   createSendToken(user, 200, res);
 
-  // Redirect to homepage with success flag
-  return res.redirect(`${process.env.FRONTEND_URL}?verified=success`);
+  // Redirect to the email-verified page instead of showing JSON
+  return res.redirect(`${process.env.FRONTEND_URL}/pages/auth/email-verified.html`);
 });
+
 
 // Resend verification email
 exports.resendVerification = catchAsync(async (req, res, next) => {
