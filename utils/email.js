@@ -27,7 +27,7 @@ const sendEmail = async (options) => {
 
 // NEW: Send verification email
 const sendVerificationEmail = async (user, verificationToken) => {
-  const verificationURL = `${process.env.BACKEND_URL}/auth/verify-email/${verificationToken}`;
+const verificationURL = `${process.env.FRONTEND_URL}/pages/auth/verify-link.html?token=${verificationToken}`;
   
   const message = `Welcome to ScyDB! Please verify your email address by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`;
   
