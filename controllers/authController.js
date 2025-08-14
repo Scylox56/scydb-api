@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const AppError = require('../utils/appError');
 const { signToken, catchAsync } = require('../utils/utils');
-const { sendVerificationEmail } = require('../utils/email');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 
 const createSendToken = (user, statusCode, res, redirectUrl) => {
   const token = signToken(user._id);
@@ -138,6 +138,76 @@ exports.resendVerification = catchAsync(async (req, res, next) => {
 
     return next(new AppError('There was an error sending the verification email. Please try again.', 500));
   }
+});
+
+// Forgot password
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return next(new AppError('Please provide your email address', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new AppError('No user found with that email address', 404));
+  }
+
+  // Generate reset token
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await sendPasswordResetEmail(user, resetToken);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset email sent successfully!'
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return next(new AppError('There was an error sending the email. Please try again.', 500));
+  }
+});
+
+// Reset password
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return next(new AppError('Password reset token is invalid or has expired', 400));
+  }
+
+  // Validate new password
+  if (!req.body.password || !req.body.passwordConfirm) {
+    return next(new AppError('Please provide password and password confirmation', 400));
+  }
+
+  if (req.body.password !== req.body.passwordConfirm) {
+    return next(new AppError('Passwords do not match', 400));
+  }
+
+  // Update password
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  // Log user in with new password
+  createSendToken(user, 200, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {

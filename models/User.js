@@ -48,6 +48,8 @@ const userSchema = new mongoose.Schema({
   },
   emailVerificationToken: String,
   emailVerificationExpires: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   
   watchLater: [{
     type:mongoose.Schema.ObjectId,
@@ -95,7 +97,21 @@ userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
   return false; // its not chanegd
 };
 
-// NEW: Create email verification token
+// Create pass reset token
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  
+  return resetToken;
+};
+
+// Create email verification token
 userSchema.methods.createEmailVerificationToken = function() {
   const verificationToken = crypto.randomBytes(32).toString('hex');
   
