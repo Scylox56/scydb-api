@@ -74,22 +74,35 @@ const sendVerificationEmail = async (user, verificationToken) => {
 // Send password reset email
 const sendPasswordResetEmail = async (user, resetToken) => {
   const resetURL = `${process.env.FRONTEND_URL}/pages/auth/reset-password.html?token=${resetToken}`;
-  
-  const message = `Forgot your password? Click the link below to reset it:\n\n${resetURL}\n\nThis link will expire in 30 minutes.\n\nIf you didn't request this, please ignore this email.`;
 
+  // Softer wording, consistent intro
+  const message = `
+Hello ${user.name},
+
+We received your request to update your password for your ScyDB account.
+If you made this request, you can confirm it here:
+
+${resetURL}
+
+This link will expire in 30 minutes.
+If you didn't request this, you can safely ignore this email.
+`;
+
+  // HTML now matches verification email structure exactly
   const html = `
     <div style="background-color:#F2F0E3; padding:40px 20px; font-family: Arial, sans-serif; color:#2E2E2E; text-align:center;">
       <div style="max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:12px; padding:30px; box-shadow:0 4px 20px rgba(0,0,0,0.05);">
         
-        <h1 style="color:#F76F53; margin-bottom:10px; font-size:28px;">Reset Your Password</h1>
+        <h1 style="color:#F76F53; margin-bottom:10px; font-size:28px;">Password Reset Request</h1>
         <p style="font-size:16px; color:#555; margin-bottom:30px;">
           Hi <strong>${user.name}</strong>,  
-          We received a request to reset your password. Click the button below to create a new password.
+          We received your request to update your password for your ScyDB account.  
+          If you made this request, please click the button below:
         </p>
 
         <a href="${resetURL}" 
            style="background-color:#F76F53; color:#FFFFFF; padding:14px 30px; border-radius:8px; text-decoration:none; font-size:16px; font-weight:bold; display:inline-block; margin-bottom:25px;">
-          Reset Password
+          Confirm Password Reset
         </a>
 
         <p style="font-size:14px; color:#777; margin-bottom:5px;">Or copy and paste this link into your browser:</p>
@@ -99,7 +112,7 @@ const sendPasswordResetEmail = async (user, resetToken) => {
 
         <p style="font-size:12px; color:#999;">
           This link will expire in 30 minutes.  
-          If you didn't request this password reset, you can safely ignore this email.
+          If you didn’t request this password reset, you can safely ignore this email.
         </p>
       </div>
 
@@ -109,11 +122,16 @@ const sendPasswordResetEmail = async (user, resetToken) => {
     </div>
   `;
 
+  // Send email with transactional header
   await sendEmail({
     email: user.email,
-    subject: 'ScyDB - Reset Your Password',
+    subject: 'ScyDB - Password Reset Request',
     message,
-    html
+    html,
+    headers: {
+      'X-Mailer': 'ScyDBMailer',
+      'X-Transactional-Email': 'true'
+    }
   });
 };
 
