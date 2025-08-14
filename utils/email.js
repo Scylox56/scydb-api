@@ -75,7 +75,7 @@ const sendVerificationEmail = async (user, verificationToken) => {
 const sendPasswordResetEmail = async (user, resetToken) => {
   const resetURL = `${process.env.FRONTEND_URL}/pages/auth/reset-password.html?token=${resetToken}`;
   
-  const message = `Forgot your password? Click the link below to reset it:\n\n${resetURL}\n\nThis link will expire in 10 minutes.\n\nIf you didn't request this, please ignore this email.`;
+  const message = `Forgot your password? Click the link below to reset it:\n\n${resetURL}\n\nThis link will expire in 30 minutes.\n\nIf you didn't request this, please ignore this email.`;
 
   const html = `
     <div style="background-color:#F2F0E3; padding:40px 20px; font-family: Arial, sans-serif; color:#2E2E2E; text-align:center;">
@@ -98,7 +98,7 @@ const sendPasswordResetEmail = async (user, resetToken) => {
         </p>
 
         <p style="font-size:12px; color:#999;">
-          This link will expire in 10 minutes.  
+          This link will expire in 30 minutes.  
           If you didn't request this password reset, you can safely ignore this email.
         </p>
       </div>
