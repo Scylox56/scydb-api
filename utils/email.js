@@ -75,7 +75,7 @@ const sendVerificationEmail = async (user, verificationToken) => {
 const sendPasswordResetEmail = async (user, resetToken) => {
   const resetURL = `${process.env.FRONTEND_URL}/pages/auth/reset-password.html?token=${resetToken}`;
 
-  // Softer wording, consistent intro
+
   const message = `
 Hello ${user.name},
 
