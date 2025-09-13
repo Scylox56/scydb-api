@@ -18,7 +18,8 @@ app.use(cors({
     'http://127.0.0.1:8080',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'https://scydb.netlify.app'
+    'https://scydb.netlify.app',
+    'https://scydb-api.vercel.app'
   ],
   credentials: true
 }));
