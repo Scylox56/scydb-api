@@ -50,3 +50,4 @@ public
 tmp/
 temp/
 test-setup.js
+.env
